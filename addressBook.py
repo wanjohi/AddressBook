@@ -25,7 +25,7 @@ class AddressBook:
     def init_db(self):
         """
         This method initializes a in memory sqllite database and create a table to hold our data
-        :return:
+        :return: None
         """
         self.sqldb = sqlite3.connect(":memory:")
         self.cursor = self.sqldb.cursor()
@@ -51,8 +51,8 @@ class AddressBook:
     def csv_file_parsing(self,csv_file_path):
         """
         This method parses the csv file provided and stores it in the sqllite database
-        :param csv_file:
-        :return:
+        :param csv_file_path: PATH to csv file
+        :return: None
         """
 
         number_of_records = 0
@@ -72,6 +72,9 @@ class AddressBook:
                 # Loop through each row and parse out the contacts
                 if self.contact_parser(header_row, row):
                     number_of_records +=1
+                else:
+                    print("Invalid or Duplicate data Found! Rejected Row:")
+                    print(row, "\n", "\n")
 
             print("Number of users successfully imported:", number_of_records)
 
@@ -82,7 +85,7 @@ class AddressBook:
         This function takes a csv row and turns into into a contact
         :param header_row: header names
         :param row: contact details
-        :return:
+        :return: None
         """
         contact = {}
         for index, value in enumerate(row):
@@ -130,11 +133,11 @@ class AddressBook:
     def name_validator(self, str):
         """
         Validate the name string, raise error if invalid, else return True
-        :param str:
-        :return:
+        :param str: String to test
+        :return: Boolean
         """
         # Length limit and alphanumeric checker
-        if len(str) > 256 or not str.isalpha():
+        if len(str) > 256 or len(str) < 1 or not str.isalpha():
             return False
 
         # Valid name
@@ -145,11 +148,11 @@ class AddressBook:
     def email_validator(self, str):
         """
         Validate the email string, raise error if invalid, else return True
-        :param str:
-        :return:
+        :param str: String to test
+        :return: Boolean
         """
         # Length limit checker
-        if len(str) > 256:
+        if len(str) > 256 or len(str) < 1:
             return False
 
         # Valid email checker
@@ -170,8 +173,8 @@ class AddressBook:
     def postal_validator(self,str):
         """
         Validate the postal code
-        :param str:
-        :return:
+        :param str: String to test
+        :return: Boolean
         """
         # Valid postal code checker
         if not re.match(r"^[a-zA-Z0-9]{3} [a-zA-Z0-9]{3}$", str):
@@ -182,7 +185,15 @@ class AddressBook:
 
 
 
-    def get_duplicate(self):
+    def get_duplicates(self):
+        """
+        This function performs an SQL select of duplicate data from each column then combines the results, orders them
+        in descending order and takes the first result.
+        Because I could not ask what specific fields to find duplicates for, the function has been written to allow
+        changing what columns we can search duplicates for. Simply comment out the 'sql_fields' you dont want to find
+        duplicates for.
+        :return: SQL result
+        """
 
         sql_fields = []
 
@@ -243,7 +254,7 @@ class AddressBook:
         self.cursor.execute(sql)
         result = self.cursor.fetchone()
 
-        print("Maximum match count: ", result[1])
+        print("Maximum match count:", result[1])
 
         # Get all the contacts that are part of the max group
         group_sql = 'SELECT last_name, first_name, email FROM contacts WHERE ' + result[2] + '=\'' + result[0] + '\''
@@ -265,7 +276,7 @@ def main():
 
     address_book = AddressBook(sys.argv[1])
 
-    address_book.get_duplicate()
+    address_book.get_duplicates()
 
 
 

@@ -21,7 +21,12 @@ class AddressBook:
         self.csv_file_parsing(csv_file_path)
 
 
+
     def init_db(self):
+        """
+        This method initializes a in memory sqllite database and create a table to hold our data
+        :return:
+        """
         self.sqldb = sqlite3.connect(":memory:")
         self.cursor = self.sqldb.cursor()
 
@@ -40,6 +45,8 @@ class AddressBook:
              web text)''')
 
         self.sqldb.commit()
+
+
 
     def csv_file_parsing(self,csv_file_path):
         """
@@ -68,6 +75,8 @@ class AddressBook:
 
             print("Number of users successfully imported:", number_of_records)
 
+
+
     def contact_parser(self, header_row, row):
         """
         This function takes a csv row and turns into into a contact
@@ -77,22 +86,36 @@ class AddressBook:
         """
         contact = {}
         for index, value in enumerate(row):
-            if header_row[index] == "first_name":
-                self.name_validator(value)
-                contact.update({header_row[index]:value})
-            elif header_row[index] == "last_name":
-                self.name_validator(value)
-                contact.update({header_row[index]: value})
-            elif header_row[index] == "email":
-                if self.email_validator(value):
-                    contact.update({header_row[index]: value})
-                else:
+            if header_row[index] == "first_name" or header_row[index] == "last_name":
+                if not self.name_validator(value):
+                    # Invalid name
                     return False
-            else:
-                if len(value) > 256:
-                    raise ValueError("Too many characters")
+
                 contact.update({header_row[index]: value})
 
+            elif header_row[index] == "email":
+                if not self.email_validator(value):
+                    # Invalid email
+                    return False
+
+                contact.update({header_row[index]: value})
+
+            elif header_row[index] == "postal":
+                if not self.postal_validator(value):
+                    # Invalid postal code
+                    return False
+
+                contact.update({header_row[index]: value})
+
+            else:
+                # All other data points without special validator
+                if len(value) > 256:
+                    # Too many characters
+                    return False
+
+                contact.update({header_row[index]: value})
+
+        # Insert into database
         self.cursor.execute('INSERT INTO contacts (first_name, last_name,company_name, address,'
                             ' city,province, postal, phone1, phone2, email, web) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
                             (contact['first_name'], contact['last_name'], contact['company_name'], contact['address'],
@@ -102,20 +125,22 @@ class AddressBook:
 
         return True
 
+
+
     def name_validator(self, str):
         """
         Validate the name string, raise error if invalid, else return True
         :param str:
         :return:
         """
-        # Length limit checker
-        if len(str) > 256:
-            raise ValueError("Too many characters")
+        # Length limit and alphanumeric checker
+        if len(str) > 256 or not str.isalpha():
+            return False
 
-        if not str.isalpha():
-            raise ValueError("Not Alphanumeric")
-
+        # Valid name
         return True
+
+
 
     def email_validator(self, str):
         """
@@ -127,7 +152,8 @@ class AddressBook:
         if len(str) > 256:
             return False
 
-        if not re.match(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$", str):
+        # Valid email checker
+        if not re.match(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9_-]+\.[a-zA-Z]+$", str):
             return False
 
         # Check if email is in database
@@ -137,8 +163,24 @@ class AddressBook:
         if self.cursor.fetchone():
             return False
 
-
+        # Valid email
         return True
+
+
+    def postal_validator(self,str):
+        """
+        Validate the postal code
+        :param str:
+        :return:
+        """
+        # Valid postal code checker
+        if not re.match(r"^[a-zA-Z0-9]{3} [a-zA-Z0-9]{3}$", str):
+            return False
+
+        # Valid postal code
+        return True
+
+
 
     def get_duplicate(self):
 

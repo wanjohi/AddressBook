@@ -1,3 +1,4 @@
+import sys
 import os.path
 import sqlite3
 import csv
@@ -207,3 +208,24 @@ class AddressBook:
 
         for row in self.cursor.execute(group_sql):
             print(row[0],',',row[1],'at', row[2])
+
+
+
+
+
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("Wrong Usage!")
+        print("Correct Usage: python main.py /path/to/csv/file")
+        return 0
+
+    address_book = AddressBook(sys.argv[1])
+
+    address_book.get_duplicate()
+
+
+
+if __name__ == "__main__":
+    main()
